@@ -1,0 +1,8 @@
+[package]
+name = "backend"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+rocket = { version = "0.5.0", features = ["tls", "uuid"] }
+sqlx = { version = "0.7", features = [ "runtime-tokio", "tls-rustls" ] }
