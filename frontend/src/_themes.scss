@@ -1,0 +1,12 @@
+.dark {
+  --color: #fffff4;
+  --background-color: #242424;
+}
+
+.light {
+  --color: #242424;
+  --background-color: #fffff4;
+}
+
+$color: var(--color);
+$background-color: var(--background-color);
