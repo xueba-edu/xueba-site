@@ -26,6 +26,7 @@ pub async fn get_user_info(user_id: Uuid) -> Result<(Status, Json<User>), Status
             user_id,
             name_first: "Richie".into(),
             name_last: "Zhang".into(),
+            email: "richiezhang06@gmail.com".into(),
         }),
     ))
 }

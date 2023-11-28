@@ -5,7 +5,8 @@ edition = "2021"
 
 [dependencies]
 rocket = { version = "0.5.0", features = ["tls", "uuid", "json"] }
-sqlx = { version = "0.7", features = [ "runtime-tokio", "tls-rustls", "mysql" ] }
+sqlx = { version = "0.7", features = [ "runtime-tokio", "tls-rustls", "mysql", "uuid" ] }
+dotenvy = "0.15.7"
 
 [dependencies.uuid]
 version = "1.6.1"
