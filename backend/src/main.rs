@@ -1,17 +1,18 @@
 #[macro_use]
 extern crate rocket;
 
-#[get("/")]
-fn hello() -> &'static str {
-    "Hello, world!"
-}
-
-#[get("/login")]
-fn login() -> &'static str {
-    "login failed cause this not implemented yet"
-}
+pub mod models;
+pub mod routes;
 
 #[launch]
 fn rocket() -> _ {
-    rocket::build().mount("/api", routes![hello, login])
+    rocket::build().mount(
+        "/api",
+        routes![
+            routes::user::post_user_login,
+            routes::user::post_user_signup,
+            routes::user::get_user_info,
+            routes::user::get_user_list,
+        ],
+    )
 }

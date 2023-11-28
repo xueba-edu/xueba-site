@@ -4,5 +4,10 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-rocket = { version = "0.5.0", features = ["tls", "uuid"] }
-sqlx = { version = "0.7", features = [ "runtime-tokio", "tls-rustls" ] }
+rocket = { version = "0.5.0", features = ["tls", "uuid", "json"] }
+sqlx = { version = "0.7", features = [ "runtime-tokio", "tls-rustls", "mysql" ] }
+
+[dependencies.uuid]
+version = "1.6.1"
+features = ["v4"]
+
