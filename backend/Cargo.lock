@@ -125,6 +125,7 @@ dependencies = [
  "dotenvy",
  "rocket",
  "rocket_cors",
+ "sha2",
  "sqlx",
  "uuid",
 ]

@@ -5,6 +5,7 @@ extern crate rocket;
 
 pub mod models;
 pub mod routes;
+pub mod utils;
 
 #[launch]
 async fn rocket() -> _ {
@@ -33,6 +34,7 @@ async fn rocket() -> _ {
             routes::user::post_user_signup,
             routes::user::get_user_info,
             routes::user::get_user_list,
+            routes::class::post_class_join,
         ],
     )
 }

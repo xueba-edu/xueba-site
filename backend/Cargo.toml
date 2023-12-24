@@ -8,8 +8,8 @@ rocket = { version = "0.5.0", features = ["tls", "uuid", "json"] }
 rocket_cors = { version = "0.6.0", default-features = false }
 sqlx = { version = "0.7", features = [ "runtime-tokio", "tls-rustls", "mysql", "uuid" ] }
 dotenvy = "0.15.7"
+sha2 = "0.10.8"
 
 [dependencies.uuid]
 version = "1.6.1"
 features = ["v4"]
-
