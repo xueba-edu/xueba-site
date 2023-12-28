@@ -1,11 +1,17 @@
-use rocket::serde::uuid::Uuid;
+use rocket::serde::{Serialize, Deserialize};
 
-#[derive(rocket::serde::Serialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 #[serde(crate = "rocket::serde")]
 pub struct User {
-    pub user_id: Uuid,
     pub name_first: String,
     pub name_last: String,
     pub email: String,
     pub is_student: bool,
+}
+
+#[derive(rocket::serde::Deserialize)]
+#[serde(crate = "rocket::serde")]
+pub struct UserSignupInfo {
+    pub password: String,
+    pub user_info: User,
 }

@@ -7,7 +7,7 @@ use sha2::Digest;
 use sqlx::MySqlPool;
 use uuid::uuid;
 
-use crate::models::user::User;
+use crate::models::user::{User, UserSignupInfo};
 
 #[post("/user/login")]
 pub async fn post_user_login(pool: &State<MySqlPool>) -> Status {
@@ -29,12 +29,11 @@ pub async fn post_user_login(pool: &State<MySqlPool>) -> Status {
     Status::Ok
 }
 
-#[post("/user/signup")]
-pub async fn post_user_signup(pool: &State<MySqlPool>) -> Status {
-    // TODO: actually explain what is going on cause idk i forgot
+#[post("/user/signup", data = "<input>")]
+pub async fn post_user_signup(pool: &State<MySqlPool>, input: Json<UserSignupInfo>) -> Status {
     let salt = Uuid::new_v4();
     let salt = salt.as_bytes().as_slice();
-    let password = b"hello world";
+    let password = input.password.as_bytes();
 
     let salted = [salt, password].concat();
 
@@ -46,10 +45,10 @@ pub async fn post_user_signup(pool: &State<MySqlPool>) -> Status {
     sqlx::query!(
         "INSERT INTO user (user_id, name_first, name_last, email, is_student, password) VALUES (?, ?, ?, ?, ?, ?)",
         Uuid::new_v4(),
-        "asdadasdada",
-        "asdad",
-        "asdadasdsad@gmail.com",
-        true,
+        input.user_info.name_first,
+        input.user_info.name_last,
+        input.user_info.email,
+        input.user_info.is_student,
         hashed_password
     )
     .execute(pool.inner())
@@ -66,7 +65,7 @@ pub async fn get_user_info(
 ) -> Result<(Status, Json<User>), Status> {
     match sqlx::query_as!(
         User,
-        r#"SELECT user_id AS `user_id: Uuid`, name_first, name_last, email, is_student AS `is_student: bool`
+        r#"SELECT name_first, name_last, email, is_student AS `is_student: bool`
         FROM user 
         WHERE user_id = ?"#,
         user_id
