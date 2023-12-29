@@ -1,3 +1,5 @@
+use std::time::UNIX_EPOCH;
+
 use rocket::{
     http::Status,
     serde::{json::Json, uuid::Uuid},
@@ -7,6 +9,25 @@ use sha2::Digest;
 use sqlx::MySqlPool;
 
 use crate::models::user::{User, UserAuthClaims, UserLoginInfo, UserSignupInfo};
+
+fn get_token_from_id(id: Uuid) -> String {
+    use jsonwebtoken::*;
+    let now = std::time::SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_secs();
+
+    let claim = UserAuthClaims {
+        exp: now + 15 * 60,
+        id,
+    };
+    encode(
+        &Header::default(),
+        &claim,
+        &EncodingKey::from_secret(std::env::var("SECRET").unwrap().as_ref()),
+    )
+    .unwrap()
+}
 
 #[post("/user/login", data = "<login>")]
 pub async fn post_user_login(
@@ -28,14 +49,7 @@ pub async fn post_user_login(
             hasher.update(salted);
             let result = hasher.finalize();
             if result.as_slice() == &correct_hashed_password[16..] {
-                use jsonwebtoken::*;
-                let claim = UserAuthClaims { id: record.user_id };
-                let token = encode(
-                    &Header::default(),
-                    &claim,
-                    &EncodingKey::from_secret(std::env::var("SECRET").unwrap().as_ref()),
-                )
-                .unwrap();
+                let token = get_token_from_id(record.user_id);
                 Ok((Status::Ok, token))
             } else {
                 Err(Status::Unauthorized)
@@ -79,14 +93,7 @@ pub async fn post_user_signup(
     .await
     .unwrap();
 
-    use jsonwebtoken::*;
-    let claim = UserAuthClaims { id: uuid };
-    let token = encode(
-        &Header::default(),
-        &claim,
-        &EncodingKey::from_secret(std::env::var("SECRET").unwrap().as_ref()),
-    )
-    .unwrap();
+    let token = get_token_from_id(uuid);
 
     Ok((Status::Ok, token))
 }
@@ -140,5 +147,24 @@ pub async fn get_user_list(
             sqlx::Error::RowNotFound => Err(Status::NotFound),
             _ => Err(Status::InternalServerError),
         },
+    }
+}
+
+#[get("/user/class_list")]
+pub async fn get_user_class_list(
+    state: &State<MySqlPool>,
+    auth: UserAuthClaims,
+) -> Json<Vec<Uuid>> {
+    match sqlx::query!(
+        r#"SELECT class_id AS `class_id: Uuid`
+        FROM class_user
+        WHERE user_id = ?"#,
+        auth.id,
+    )
+    .fetch_all(state.inner())
+    .await
+    {
+        Ok(classes) => Json(classes.into_iter().map(|record| record.class_id).collect()),
+        Err(_) => Json(vec![]),
     }
 }
