@@ -5,16 +5,17 @@ use rocket::{
 };
 use sha2::Digest;
 use sqlx::MySqlPool;
-use uuid::uuid;
 
-use crate::models::user::{User, UserSignupInfo};
+use crate::models::user::{User, UserAuthClaims, UserLoginInfo, UserSignupInfo};
 
-#[post("/user/login")]
-pub async fn post_user_login(pool: &State<MySqlPool>) -> Status {
-    let user_id = uuid!("e7e8ed68-67f4-4dcc-ba74-cade10e73b9d");
+#[post("/user/login", data = "<login>")]
+pub async fn post_user_login(
+    pool: &State<MySqlPool>,
+    login: Json<UserLoginInfo>,
+) -> Result<(Status, String), Status> {
     match sqlx::query!(
-        "SELECT password AS `password: Vec<u8>` FROM user WHERE user_id = ?",
-        user_id
+        "SELECT user_id AS `user_id: Uuid`, password AS `password: Vec<u8>` FROM user WHERE email = ?",
+        login.email
     )
     .fetch_one(pool.inner())
     .await
@@ -22,15 +23,36 @@ pub async fn post_user_login(pool: &State<MySqlPool>) -> Status {
         Ok(record) => {
             let correct_hashed_password = record.password.as_slice();
             let salt = &correct_hashed_password[0..16];
-            // TODO: make this actually work cause i forgot how we create password
+            let salted = [salt, login.password.as_bytes()].concat();
+            let mut hasher = sha2::Sha256::new();
+            hasher.update(salted);
+            let result = hasher.finalize();
+            if result.as_slice() == &correct_hashed_password[16..] {
+                use jsonwebtoken::*;
+                let claim = UserAuthClaims { id: record.user_id };
+                let token = encode(
+                    &Header::default(),
+                    &claim,
+                    &EncodingKey::from_secret(std::env::var("SECRET").unwrap().as_ref()),
+                )
+                .unwrap();
+                Ok((Status::Ok, token))
+            } else {
+                Err(Status::Unauthorized)
+            }
         }
-        Err(err) => println!("{err:?}"),
+        Err(err) => {
+            println!("{err:?}");
+            Err(Status::NotFound)
+        }
     }
-    Status::Ok
 }
 
 #[post("/user/signup", data = "<input>")]
-pub async fn post_user_signup(pool: &State<MySqlPool>, input: Json<UserSignupInfo>) -> Status {
+pub async fn post_user_signup(
+    pool: &State<MySqlPool>,
+    input: Json<UserSignupInfo>,
+) -> Result<(Status, String), Status> {
     let salt = Uuid::new_v4();
     let salt = salt.as_bytes().as_slice();
     let password = input.password.as_bytes();
@@ -42,9 +64,11 @@ pub async fn post_user_signup(pool: &State<MySqlPool>, input: Json<UserSignupInf
     let result = hasher.finalize();
     let hashed_password = [salt, result.as_slice()].concat();
 
+    let uuid = Uuid::new_v4();
+
     sqlx::query!(
         "INSERT INTO user (user_id, name_first, name_last, email, is_student, password) VALUES (?, ?, ?, ?, ?, ?)",
-        Uuid::new_v4(),
+        uuid,
         input.user_info.name_first,
         input.user_info.name_last,
         input.user_info.email,
@@ -55,7 +79,16 @@ pub async fn post_user_signup(pool: &State<MySqlPool>, input: Json<UserSignupInf
     .await
     .unwrap();
 
-    Status::Ok
+    use jsonwebtoken::*;
+    let claim = UserAuthClaims { id: uuid };
+    let token = encode(
+        &Header::default(),
+        &claim,
+        &EncodingKey::from_secret(std::env::var("SECRET").unwrap().as_ref()),
+    )
+    .unwrap();
+
+    Ok((Status::Ok, token))
 }
 
 #[get("/user/info?<user_id>")]
