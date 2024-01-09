@@ -18,7 +18,7 @@ fn get_token_from_id(id: Uuid) -> String {
         .as_secs();
 
     let claim = UserAuthClaims {
-        exp: now + 15 * 60,
+        exp: now + 15 * 60 * 60,
         id,
     };
     encode(
@@ -114,35 +114,6 @@ pub async fn get_user_info(
     .await
     {
         Ok(user) => Ok((Status::Ok, Json(user))),
-        Err(err) => match err {
-            sqlx::Error::RowNotFound => Err(Status::NotFound),
-            _ => Err(Status::InternalServerError),
-        },
-    }
-}
-
-#[get("/user/list?<class_id>")]
-pub async fn get_user_list(
-    class_id: Uuid,
-    state: &State<MySqlPool>,
-) -> Result<(Status, Json<Vec<Uuid>>), Status> {
-    match sqlx::query!(
-        // r#"
-        // SELECT user_id AS `user_id: Uuid`
-        // FROM user
-        // "#
-        r#"SELECT user_id AS `user_id: Uuid`
-        FROM class_user
-        WHERE class_id = ?"#,
-        class_id
-    )
-    .fetch_all(state.inner())
-    .await
-    {
-        Ok(users) => Ok((
-            Status::Ok,
-            Json(users.into_iter().map(|x| x.user_id).collect()),
-        )),
         Err(err) => match err {
             sqlx::Error::RowNotFound => Err(Status::NotFound),
             _ => Err(Status::InternalServerError),

@@ -1,4 +1,4 @@
-use jsonwebtoken::{DecodingKey, EncodingKey, Validation};
+use jsonwebtoken::{DecodingKey, Validation};
 use rocket::{
     http::Status,
     outcome::Outcome,

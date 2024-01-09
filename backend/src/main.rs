@@ -33,8 +33,8 @@ async fn rocket() -> _ {
             routes::user::post_user_login,
             routes::user::post_user_signup,
             routes::user::get_user_info,
-            routes::user::get_user_list,
             routes::user::get_user_class_list,
+            routes::class::get_class_user_list,
             routes::class::post_class_join,
         ],
     )
