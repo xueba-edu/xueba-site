@@ -8,7 +8,7 @@ use rocket::{
 use sha2::Digest;
 use sqlx::MySqlPool;
 
-use crate::models::user::{User, UserAuthClaims, UserLoginInfo, UserSignupInfo};
+use crate::models::user::{self, User, UserAuthClaims, UserLoginInfo, UserSignupInfo};
 
 fn get_token_from_id(id: Uuid) -> String {
     use jsonwebtoken::*;
@@ -81,12 +81,12 @@ pub async fn post_user_signup(
     let uuid = Uuid::new_v4();
 
     sqlx::query!(
-        "INSERT INTO user (user_id, name_first, name_last, email, is_student, password) VALUES (?, ?, ?, ?, ?, ?)",
+        "INSERT INTO user (user_id, name_first, name_last, email, is_teacher, password) VALUES (?, ?, ?, ?, ?, ?)",
         uuid,
         input.user_info.name_first,
         input.user_info.name_last,
         input.user_info.email,
-        input.user_info.is_student,
+        input.user_info.is_teacher,
         hashed_password
     )
     .execute(pool.inner())
@@ -100,12 +100,13 @@ pub async fn post_user_signup(
 
 #[get("/user/info?<user_id>")]
 pub async fn get_user_info(
-    user_id: Uuid,
+    user_id: Option<Uuid>,
     state: &State<MySqlPool>,
+    auth: UserAuthClaims,
 ) -> Result<(Status, Json<User>), Status> {
     match sqlx::query_as!(
         User,
-        r#"SELECT name_first, name_last, email, is_student AS `is_student: bool`
+        r#"SELECT name_first, name_last, email, is_teacher AS `is_teacher: bool`
         FROM user 
         WHERE user_id = ?"#,
         user_id

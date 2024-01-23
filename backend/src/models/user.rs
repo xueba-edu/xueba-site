@@ -12,7 +12,7 @@ pub struct User {
     pub name_first: String,
     pub name_last: String,
     pub email: String,
-    pub is_student: bool,
+    pub is_teacher: bool,
 }
 
 #[derive(Deserialize)]
